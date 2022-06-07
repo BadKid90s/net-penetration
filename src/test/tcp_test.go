@@ -1,6 +1,7 @@
 package test
 
 import (
+	"fmt"
 	"net"
 	"testing"
 )
@@ -20,6 +21,11 @@ func TestTcpListen(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	listenTCP2, err := net.ListenTCP("tcp", tcpAddr)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Println(listenTCP2)
 	for true {
 		tcpConn, err := listenTCP.AcceptTCP()
 		if err != nil {

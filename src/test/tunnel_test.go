@@ -3,13 +3,12 @@ package test
 import (
 	"io"
 	"net"
-	"strconv"
 	"testing"
 )
 
 const (
 	serverAddr = "0.0.0.0:23222"
-	tunnelAddr = "0.0.0.0:24222"
+	tunnelAddr = "0.0.0.0:24223"
 	BufSize    = 10
 )
 
@@ -44,14 +43,14 @@ func TestServer(t *testing.T) {
 			}
 		}
 		t.Log("服务端接收：" + string(b))
-		atoi, err := strconv.Atoi(string(b))
+
 		if err != nil {
 			t.Fatal(err)
 		}
-		atoi = atoi + 2
+		s := "server：" + string(b)
 
-		t.Log("服务端发送：" + string(strconv.Itoa(atoi)))
-		_, err = tcpConn.Write([]byte(strconv.Itoa(atoi)))
+		t.Log("服务端发送：" + s)
+		_, err = tcpConn.Write([]byte(s))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -61,16 +60,16 @@ func TestServer(t *testing.T) {
 
 //client
 func TestClient(t *testing.T) {
-	tcpAddr, err := net.ResolveTCPAddr("tcp", tunnelAddr)
+	tunnelAddress, err := net.ResolveTCPAddr("tcp", tunnelAddr)
 	if err != nil {
 		t.Fatal(err)
 	}
-	tcpConn, err := net.DialTCP("tcp", nil, tcpAddr)
+	tunnelTcpConn, err := net.DialTCP("tcp", nil, tunnelAddress)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	_, err = tcpConn.Write([]byte("1200"))
+	_, err = tunnelTcpConn.Write([]byte("1200"))
 	t.Log("客户端发送：" + "1200")
 	if err != nil {
 		t.Fatal(err)
@@ -78,7 +77,7 @@ func TestClient(t *testing.T) {
 	var b = make([]byte, 0)
 	for true {
 		var buf [BufSize]byte
-		read, err := tcpConn.Read(buf[:])
+		read, err := tunnelTcpConn.Read(buf[:])
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -94,17 +93,17 @@ func TestClient(t *testing.T) {
 
 //tunnel
 func TestTunnel(t *testing.T) {
-	tcpAddr, err := net.ResolveTCPAddr("tcp", tunnelAddr)
+	tunnelAddress, err := net.ResolveTCPAddr("tcp", tunnelAddr)
 	if err != nil {
 		t.Fatal(err)
 	}
-	tcpListener, err := net.ListenTCP("tcp", tcpAddr)
+	tunnelListener, err := net.ListenTCP("tcp", tunnelAddress)
 	if err != nil {
 		t.Fatal(err)
 	}
 	for true {
 		// 客户端连接
-		clientTcpConnect, err := tcpListener.AcceptTCP()
+		tunnelTcpConnect, err := tunnelListener.AcceptTCP()
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -149,7 +148,7 @@ func TestTunnel(t *testing.T) {
 		//t.Log("通道发送：" + string(b2))
 		//clientTcpConnect.Write(b2)
 
-		go io.Copy(clientTcpConnect, serverTcpConn)
-		go io.Copy(serverTcpConn, clientTcpConnect)
+		go io.Copy(tunnelTcpConnect, serverTcpConn)
+		go io.Copy(serverTcpConn, tunnelTcpConnect)
 	}
 }

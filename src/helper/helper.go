@@ -1,8 +1,11 @@
 package helper
 
 import (
+	"gopkg.in/yaml.v3"
+	"io/ioutil"
 	"log"
 	"net"
+	"net-penetration/conf"
 	"net-penetration/define"
 	"time"
 )
@@ -37,18 +40,28 @@ func KeepAlive(conn net.Conn) {
 	}
 }
 
-func GetDataFromConnect(bufSize int, conn net.Conn) ([]byte, error) {
-	b := make([]byte, 0)
+func KeepAliveReply(conn net.Conn) {
 	for true {
-		var buf = make([]byte, bufSize)
-		read, err := conn.Read(buf[:])
+		_, err := conn.Write([]byte(define.KeepAliveStr))
 		if err != nil {
-			return nil, err
+			log.Println(err)
+			return
 		}
-		b = append(b, buf[:read]...)
-		if read < bufSize {
-			break
-		}
+		time.Sleep(time.Second * 3)
 	}
-	return b, nil
+}
+
+// GetServerConf 解析server.yml
+func GetServerConf() (*conf.Server, error) {
+	s := new(conf.Server)
+	b, err := ioutil.ReadFile("./conf/server.yml")
+	if err != nil {
+		return nil, err
+	}
+	err = yaml.Unmarshal(b, &s)
+	if err != nil {
+		return nil, err
+	}
+	return s, nil
+
 }

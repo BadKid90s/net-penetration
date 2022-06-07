@@ -42,6 +42,6 @@ func messageForward() {
 		panic(err)
 	}
 
-	go io.Copy(localConn, tunnelConn)
 	go io.Copy(tunnelConn, localConn)
+	go io.Copy(localConn, tunnelConn)
 }

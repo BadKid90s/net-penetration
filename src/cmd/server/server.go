@@ -1,11 +1,13 @@
 package main
 
 import (
+	"github.com/gin-gonic/gin"
 	"io"
 	"log"
 	"net"
 	"net-penetration/define"
 	"net-penetration/helper"
+	"net/http"
 	"sync"
 )
 
@@ -23,7 +25,30 @@ func main() {
 	go userRequestListen()
 	//隧道监听
 	go tunnelListen()
+
+	go runWebServer()
 	wg.Wait()
+}
+
+func runWebServer() {
+	conf, err := helper.GetServerConf()
+	if err != nil {
+		return
+	}
+	r := gin.Default()
+	r.GET("/ping", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"message": "pong",
+		})
+	})
+
+	r.GET("/", func(c *gin.Context) {
+
+		c.String(http.StatusOK, "Hello World")
+
+	})
+
+	r.Run(conf.Web.Address)
 }
 
 // tunnelListen 用户请求监听
@@ -63,10 +88,12 @@ func userRequestListen() {
 			return
 		}
 		//发送新的消息给客户端，告诉客户端有新的连接
-		_, err := controlConnect.Write([]byte(define.NewConnectionStr))
-		if err != nil {
-			log.Printf("controlConnect Write Error %v \n", err)
-			return
+		if userRequestConnect != nil {
+			_, err := controlConnect.Write([]byte(define.NewConnectionStr))
+			if err != nil {
+				log.Printf("controlConnect Write Error %v \n", err)
+				return
+			}
 		}
 	}
 }
@@ -88,5 +115,6 @@ func controlListen() {
 		}
 		//进行心跳
 		go helper.KeepAlive(controlConnect)
+
 	}
 }
